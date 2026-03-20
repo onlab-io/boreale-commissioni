@@ -1522,7 +1522,15 @@ ${bodyHtml}
     const el = document.getElementById("print-layout");
     if (!el) return;
     el.style.display = "block";
-    const html = el.innerHTML;
+    // Inserisce separatori di pagina espliciti tra i figli
+    const children = Array.from(el.children);
+    let html = "";
+    children.forEach((child, i) => {
+      if (i > 0) {
+        html += '<div style="page-break-before:always;break-before:page;height:0;margin:0;padding:0;border:none;"></div>';
+      }
+      html += child.outerHTML;
+    });
     el.style.display = "none";
 
     const w = window.open("", "_blank", "width=900,height=700");
@@ -1591,7 +1599,14 @@ body{font-family:'Gustavo',Georgia,serif;color:#1a2f35;font-size:10px;background
     }
 
     el.style.display = "block";
-    const html = el.innerHTML;
+    const children2 = Array.from(el.children);
+    let html = "";
+    children2.forEach((child, i) => {
+      if (i > 0) {
+        html += '<div style="page-break-before:always;break-before:page;height:0;margin:0;padding:0;border:none;"></div>';
+      }
+      html += child.outerHTML;
+    });
     el.style.display = "none";
     setData(prevData);
 
