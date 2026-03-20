@@ -761,52 +761,58 @@ const TabPrev = ({d,set}) => {
     return {sub,menuTot,extra,tot,sc,totSc:tot-sc};
   },[pv,mp,sconto]);
 
-  // calcola totale riga: prezzo numerico × quantità (o 1 se fisso)
-  const rowTotal = (priceNum, qty) => {
-    if (!priceNum) return null;
-    const q = Number(qty) || 0;
-    if (q === 0 && qty !== undefined) return null;
-    return priceNum * (qty !== undefined ? q : 1);
-  };
-
-  const Row = ({label, subLabel, priceNum, priceLabel, on, setOn, qty, setQty, unit, extra, setExtra}) => {
-    const tot = on && priceNum ? rowTotal(priceNum, qty) : null;
+  const Row = ({label, subLabel, priceNum, priceLabel, on, setOn, qty, setQty, extra, setExtra}) => {
+    // Calcola totale riga
+    let tot = null;
+    if (on) {
+      if (extra !== undefined) {
+        // prezzo libero — totale = valore inserito
+        tot = extra && Number(extra) > 0 ? Number(extra) : null;
+      } else if (priceNum) {
+        if (setQty) {
+          // prezzo × quantità — mostra solo se qtà > 0
+          const q = Number(qty) || 0;
+          tot = q > 0 ? priceNum * q : null;
+        } else {
+          // prezzo fisso — mostra sempre se spuntato
+          tot = priceNum;
+        }
+      }
+    }
     return (
-      <div style={{display:"grid",gridTemplateColumns:"1fr 70px 60px 70px",gap:4,
-        alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${T.light}`}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 70px 60px 72px",gap:4,
+        alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.light}`}}>
         {/* Col 1: checkbox + label */}
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
           <input type="checkbox" checked={!!on} onChange={e=>setOn(e.target.checked)}
-            style={{width:12,height:12,accentColor:T.teal,cursor:"pointer",flexShrink:0}} />
+            style={{width:13,height:13,accentColor:T.teal,cursor:"pointer",flexShrink:0}} />
           <div>
-            <span style={{fontSize:12,fontWeight:on?"700":"400",color:on?T.text:"#9DBCC1"}}>{label}</span>
-            {subLabel && <div style={{fontSize:9,color:T.sub}}>{subLabel}</div>}
+            <span style={{fontSize:12,fontWeight:on?"700":"400",color:on?T.text:"#aac4c7"}}>{label}</span>
+            {subLabel && <div style={{fontSize:9,color:T.sub,marginTop:1}}>{subLabel}</div>}
           </div>
         </div>
         {/* Col 2: PREZZO UN. */}
         <div style={{textAlign:"right"}}>
           {extra !== undefined
-            ? <I value={extra??""} onChange={setExtra} placeholder="€" w={60} sx={{fontSize:11,textAlign:"right"}} />
+            ? <I value={extra??""} onChange={setExtra} placeholder="€" w={62} sx={{fontSize:11,textAlign:"right"}} />
             : priceLabel
-              ? <span style={{fontSize:10.5,color:T.sub,whiteSpace:"nowrap"}}>{priceLabel}</span>
+              ? <span style={{fontSize:10.5,color:on?T.teal:T.sub,whiteSpace:"nowrap",fontWeight:on?"700":"400"}}>{priceLabel}</span>
               : <span style={{color:T.border,fontSize:10}}>—</span>
           }
         </div>
         {/* Col 3: QUANTITÀ */}
         <div style={{textAlign:"center"}}>
           {setQty
-            ? <I value={qty??""} onChange={setQty} w={52} type="number"
+            ? <I value={qty??""} onChange={setQty} w={54} type="number"
                 sx={{textAlign:"center",padding:"2px 4px",fontSize:11}} />
             : <span style={{color:T.border,fontSize:10}}>—</span>
           }
         </div>
         {/* Col 4: TOTALE riga */}
-        <div style={{textAlign:"right"}}>
+        <div style={{textAlign:"right",minWidth:60}}>
           {tot != null
-            ? <span style={{fontSize:11,fontWeight:"700",color:T.teal}}>{tot.toFixed(2)} €</span>
-            : extra !== undefined && extra
-              ? <span style={{fontSize:11,fontWeight:"700",color:T.teal}}>{Number(extra).toFixed(2)} €</span>
-              : <span style={{fontSize:10,color:T.border}}>€</span>
+            ? <span style={{fontSize:12,fontWeight:"800",color:T.teal}}>{tot % 1 === 0 ? tot : tot.toFixed(2)} €</span>
+            : <span style={{fontSize:10,color:T.border}}>€</span>
           }
         </div>
       </div>
@@ -1613,13 +1619,21 @@ body{font-family:'Gustavo',Georgia,serif;color:#1a2f35;font-size:10px;background
 @media print{
   body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   .no-print{display:none!important;}
-  #pages > div{page-break-after:always !important;page-break-inside:avoid !important;break-after:page !important;}
+  #pages > div{
+    page-break-before:always !important;
+    page-break-after:always !important;
+    page-break-inside:avoid !important;
+    break-before:page !important;
+    break-after:page !important;
+    break-inside:avoid !important;
+  }
+  #pages > div:first-child{page-break-before:auto !important;break-before:auto !important;}
   #pages > div:last-child{page-break-after:auto !important;break-after:auto !important;}
   * {-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;}
 }
 @media screen{
   body{max-width:210mm;margin:0 auto;padding:10mm;}
-  #pages > div{margin-bottom:20px;border:1px dashed #ddd;padding:10px;}
+  #pages > div{margin-bottom:30px;padding-bottom:20px;border-bottom:2px dashed #ccc;}
 }
 .toolbar{position:fixed;top:0;left:0;right:0;background:#036d6e;padding:10px 20px;
   display:flex;align-items:center;gap:12px;z-index:999;font-family:'Gustavo',Georgia,serif;}
@@ -1637,7 +1651,16 @@ body{font-family:'Gustavo',Georgia,serif;color:#1a2f35;font-size:10px;background
 </div>
 <div class="no-print spacer"></div>
 <div id="pages">${html}</div>
-<script>document.fonts.ready.then(()=>{});</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const pages = document.querySelectorAll('#pages > div');
+    pages.forEach(function(p, i) {
+      if (i > 0) p.style.pageBreakBefore = 'always';
+      p.style.pageBreakAfter = 'always';
+      p.style.pageBreakInside = 'avoid';
+    });
+  });
+</script>
 </body></html>`);
     w.document.close();
     w.focus();
