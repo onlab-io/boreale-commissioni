@@ -286,6 +286,16 @@ const I = ({value,onChange,placeholder,w,type="text",sx={}}) => (
       color:T.text,outline:"none",background:T.white,width:w??"auto",boxSizing:"border-box",...sx}} />
 );
 
+// Input con label sempre visibile sopra (per campi come Candele, Colore, Gusto, ecc.)
+const LI = ({value,onChange,label,w,type="text",sx={}}) => (
+  <div style={{display:"flex",flexDirection:"column",gap:2,width:w??"auto"}}>
+    <span style={{fontSize:10,fontWeight:"700",color:T.sub,letterSpacing:"0.03em"}}>{label}</span>
+    <input type={type} value={value??""} onChange={e=>onChange(e.target.value)}
+      style={{border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:12.5,
+        color:T.text,outline:"none",background:T.white,width:"100%",boxSizing:"border-box",...sx}} />
+  </div>
+);
+
 const Cb = ({checked,onChange,label,bold}) => (
   <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",userSelect:"none",marginBottom:3}}>
     <input type="checkbox" checked={!!checked} onChange={e=>onChange(e.target.checked)}
@@ -531,12 +541,13 @@ const TabComm = ({d,set}) => {
             note={d.tBollicine.note} onNote={v=>set("tBollicine.note",v)} />
           <Cb checked={d.tFotoRif} onChange={v=>set("tFotoRif",v)} label="Foto di riferimento ricevuta" />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,margin:"7px 0"}}>
-            {[["tCandele","N° Candele"],["tPiani","Piani Torta"],["tColore","Colore"],["tGusto","Gusto"]].map(([k,pl])=>(
-              <I key={k} value={d[k]} onChange={v=>set(k,v)} placeholder={pl} w="100%" />
-            ))}
+            <LI value={d.tCandele} onChange={v=>set("tCandele",v)} label="N° Candele" />
+            <LI value={d.tPiani} onChange={v=>set("tPiani",v)} label="Piani della Torta" />
+            <LI value={d.tColore} onChange={v=>set("tColore",v)} label="Colore" />
+            <LI value={d.tGusto} onChange={v=>set("tGusto",v)} label="Gusto" />
           </div>
-          <I value={d.tDecor} onChange={v=>set("tDecor",v)} placeholder="Decorazioni" w="100%" sx={{display:"block",marginBottom:5}} />
-          <I value={d.tFrasi} onChange={v=>set("tFrasi",v)} placeholder="Frasi" w="100%" sx={{display:"block",marginBottom:7}} />
+          <LI value={d.tDecor} onChange={v=>set("tDecor",v)} label="Decorazioni" w="100%" sx={{marginBottom:5}} />
+          <LI value={d.tFrasi} onChange={v=>set("tFrasi",v)} label="Frasi" w="100%" sx={{marginBottom:7}} />
           <div style={{fontSize:11,fontWeight:"700",color:T.sub,marginBottom:3}}>Tipologie Torta</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
             {[["moderna","Moderna"],["pannaSpat","Panna Spatolata"],["nudeCake","Nude Cake"],
@@ -750,16 +761,66 @@ const TabPrev = ({d,set}) => {
     return {sub,menuTot,extra,tot,sc,totSc:tot-sc};
   },[pv,mp,sconto]);
 
-  const Row = ({label,price,on,setOn,qty,setQty,unit,extra,setExtra}) => (
-    <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 0",borderBottom:`1px solid ${T.light}`}}>
-      <input type="checkbox" checked={!!on} onChange={e=>setOn(e.target.checked)}
-        style={{width:12,height:12,accentColor:T.teal,cursor:"pointer",flexShrink:0}} />
-      <span style={{flex:1,fontSize:12,color:on?T.text:"#9DBCC1"}}>{label}</span>
-      {price!=null && <span style={{fontSize:10.5,color:T.sub,minWidth:40,textAlign:"right"}}>{price}€</span>}
-      {setQty && <I value={qty??""} onChange={setQty} w={45} type="number"
-        sx={{textAlign:"center",padding:"2px 4px",fontSize:11}} />}
-      {setExtra && <I value={extra??""} onChange={setExtra} placeholder="€" w={55} sx={{fontSize:11}} />}
-      {unit && <span style={{fontSize:10,color:T.sub,whiteSpace:"nowrap"}}>{unit}</span>}
+  // calcola totale riga: prezzo numerico × quantità (o 1 se fisso)
+  const rowTotal = (priceNum, qty) => {
+    if (!priceNum) return null;
+    const q = Number(qty) || 0;
+    if (q === 0 && qty !== undefined) return null;
+    return priceNum * (qty !== undefined ? q : 1);
+  };
+
+  const Row = ({label, subLabel, priceNum, priceLabel, on, setOn, qty, setQty, unit, extra, setExtra}) => {
+    const tot = on && priceNum ? rowTotal(priceNum, qty) : null;
+    return (
+      <div style={{display:"grid",gridTemplateColumns:"1fr 70px 60px 70px",gap:4,
+        alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${T.light}`}}>
+        {/* Col 1: checkbox + label */}
+        <div style={{display:"flex",alignItems:"center",gap:5}}>
+          <input type="checkbox" checked={!!on} onChange={e=>setOn(e.target.checked)}
+            style={{width:12,height:12,accentColor:T.teal,cursor:"pointer",flexShrink:0}} />
+          <div>
+            <span style={{fontSize:12,fontWeight:on?"700":"400",color:on?T.text:"#9DBCC1"}}>{label}</span>
+            {subLabel && <div style={{fontSize:9,color:T.sub}}>{subLabel}</div>}
+          </div>
+        </div>
+        {/* Col 2: PREZZO UN. */}
+        <div style={{textAlign:"right"}}>
+          {extra !== undefined
+            ? <I value={extra??""} onChange={setExtra} placeholder="€" w={60} sx={{fontSize:11,textAlign:"right"}} />
+            : priceLabel
+              ? <span style={{fontSize:10.5,color:T.sub,whiteSpace:"nowrap"}}>{priceLabel}</span>
+              : <span style={{color:T.border,fontSize:10}}>—</span>
+          }
+        </div>
+        {/* Col 3: QUANTITÀ */}
+        <div style={{textAlign:"center"}}>
+          {setQty
+            ? <I value={qty??""} onChange={setQty} w={52} type="number"
+                sx={{textAlign:"center",padding:"2px 4px",fontSize:11}} />
+            : <span style={{color:T.border,fontSize:10}}>—</span>
+          }
+        </div>
+        {/* Col 4: TOTALE riga */}
+        <div style={{textAlign:"right"}}>
+          {tot != null
+            ? <span style={{fontSize:11,fontWeight:"700",color:T.teal}}>{tot.toFixed(2)} €</span>
+            : extra !== undefined && extra
+              ? <span style={{fontSize:11,fontWeight:"700",color:T.teal}}>{Number(extra).toFixed(2)} €</span>
+              : <span style={{fontSize:10,color:T.border}}>€</span>
+          }
+        </div>
+      </div>
+    );
+  };
+
+  // Header colonne
+  const RowHeader = () => (
+    <div style={{display:"grid",gridTemplateColumns:"1fr 70px 60px 70px",gap:4,
+      padding:"3px 0 5px",borderBottom:`2px solid ${T.teal}`,marginBottom:2}}>
+      <span style={{fontSize:9,fontWeight:"700",color:T.sub,textTransform:"uppercase"}}></span>
+      <span style={{fontSize:9,fontWeight:"700",color:T.sub,textTransform:"uppercase",textAlign:"right"}}>PREZZO UN.</span>
+      <span style={{fontSize:9,fontWeight:"700",color:T.sub,textTransform:"uppercase",textAlign:"center"}}>QTÀ</span>
+      <span style={{fontSize:9,fontWeight:"700",color:T.sub,textTransform:"uppercase",textAlign:"right"}}>TOTALE</span>
     </div>
   );
 
@@ -774,39 +835,42 @@ const TabPrev = ({d,set}) => {
       <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:14}}>
         <div>
           <Box title="Drink e Aperitivo di Benvenuto" sx={{marginBottom:10}}>
-            <Row label="Drink Card" price={P.drinkCard} on={pv.drinkCard.on} setOn={v=>set("pv.drinkCard.on",v)} qty={pv.drinkCard.q} setQty={v=>set("pv.drinkCard.q",v)} unit="×" />
-            <Row label="Water Station Extra" price={`${P.waterExtra}/10bott`} on={pv.waterExtra.on} setOn={v=>set("pv.waterExtra.on",v)} qty={pv.waterExtra.q} setQty={v=>set("pv.waterExtra.q",v)} unit="×" />
-            <Row label="Open Bar" price={`${P.openBar} d.e.`} on={pv.openBar.on} setOn={v=>set("pv.openBar.on",v)} />
-            <Row label="Aperitivo di Benvenuto" price={P.aperitivo} on={pv.aperitivo.on} setOn={v=>set("pv.aperitivo.on",v)} qty={pv.aperitivo.q} setQty={v=>set("pv.aperitivo.q",v)} unit="pax" />
+            <RowHeader />
+            <Row label="Drink Card" priceNum={P.drinkCard} priceLabel={`${P.drinkCard}€`} on={pv.drinkCard.on} setOn={v=>set("pv.drinkCard.on",v)} qty={pv.drinkCard.q} setQty={v=>set("pv.drinkCard.q",v)} />
+            <Row label="Water Station Extra" subLabel="ogni 10 bott." priceNum={P.waterExtra} priceLabel={`${P.waterExtra}€`} on={pv.waterExtra.on} setOn={v=>set("pv.waterExtra.on",v)} qty={pv.waterExtra.q} setQty={v=>set("pv.waterExtra.q",v)} />
+            <Row label="Open Bar" subLabel="drink esclusi" priceNum={P.openBar} priceLabel={`${P.openBar}€`} on={pv.openBar.on} setOn={v=>set("pv.openBar.on",v)} />
+            <Row label="Aperitivo di Benvenuto" priceNum={P.aperitivo} priceLabel={`${P.aperitivo}€`} on={pv.aperitivo.on} setOn={v=>set("pv.aperitivo.on",v)} qty={pv.aperitivo.q} setQty={v=>set("pv.aperitivo.q",v)} />
           </Box>
           <Box title="Torta e Dessert" sx={{marginBottom:10}}>
-            <Row label="Torta" price="45/kg" on={pv.torta.on} setOn={v=>set("pv.torta.on",v)} qty={pv.torta.kg} setQty={v=>set("pv.torta.kg",v)} unit="kg" />
-            <Row label="Bollicine con torta" on={pv.bollicine.on} setOn={v=>set("pv.bollicine.on",v)} qty={pv.bollicine.q} setQty={v=>set("pv.bollicine.q",v)} unit="bott." />
-            <Row label="Torta Artificiale (solo x foto)" price={P.tortaArt} on={pv.tortaArt.on} setOn={v=>set("pv.tortaArt.on",v)} />
-            <Row label="Diritto di Taglio" price="2/per." on={pv.taglio.on} setOn={v=>set("pv.taglio.on",v)} qty={pv.taglio.q} setQty={v=>set("pv.taglio.q",v)} unit="pax" />
-            <Row label="Mini Dessert" price={P.miniDessert} on={pv.mini.on} setOn={v=>set("pv.mini.on",v)} qty={pv.mini.q} setQty={v=>set("pv.mini.q",v)} unit="pax" />
+            <RowHeader />
+            <Row label="Torta" priceNum={45} priceLabel="45€/kg" on={pv.torta.on} setOn={v=>set("pv.torta.on",v)} qty={pv.torta.kg} setQty={v=>set("pv.torta.kg",v)} />
+            <Row label="Bollicine con torta" on={pv.bollicine.on} setOn={v=>set("pv.bollicine.on",v)} qty={pv.bollicine.q} setQty={v=>set("pv.bollicine.q",v)} />
+            <Row label="Torta Artificiale (solo x foto)" priceNum={P.tortaArt} priceLabel={`${P.tortaArt}€`} on={pv.tortaArt.on} setOn={v=>set("pv.tortaArt.on",v)} />
+            <Row label="Diritto di Taglio" priceNum={2} priceLabel="2€/per." on={pv.taglio.on} setOn={v=>set("pv.taglio.on",v)} qty={pv.taglio.q} setQty={v=>set("pv.taglio.q",v)} />
+            <Row label="Mini Dessert" priceNum={P.miniDessert} priceLabel={`${P.miniDessert}€`} on={pv.mini.on} setOn={v=>set("pv.mini.on",v)} qty={pv.mini.q} setQty={v=>set("pv.mini.q",v)} />
           </Box>
           <Box title="Allestimento" sx={{marginBottom:10}}>
-            <Row label="Invito Digitale" price={P.invito} on={pv.invito.on} setOn={v=>set("pv.invito.on",v)} />
-            <Row label="LedWall" price={P.ledwall} on={pv.ledwall.on} setOn={v=>set("pv.ledwall.on",v)} />
-            <Row label="Un Dolce Cadeaux" price={P.cadeaux} on={pv.cadeaux.on} setOn={v=>set("pv.cadeaux.on",v)} qty={pv.cadeaux.q} setQty={v=>set("pv.cadeaux.q",v)} unit="pax" />
-            <Row label="Sweet Table base" price={P.sweetTable} on={pv.sweetTable.on} setOn={v=>set("pv.sweetTable.on",v)} />
-            <Row label="Confettata" price={P.confettata} on={pv.confettata.on} setOn={v=>set("pv.confettata.on",v)} qty={pv.confettata.q} setQty={v=>set("pv.confettata.q",v)} unit="pax" />
-            <Row label="Full Table Kit (tovaglia+candel+menù)" price="3/pax" on={pv.fullTable.on} setOn={v=>set("pv.fullTable.on",v)} qty={pv.fullTable.q} setQty={v=>set("pv.fullTable.q",v)} unit="pax" />
-            <Row label="Semicerchio da terra" on={pv.semicerchio.on} setOn={v=>set("pv.semicerchio.on",v)} />
+            <RowHeader />
+            <Row label="Invito Digitale" priceNum={P.invito} priceLabel={`${P.invito}€`} on={pv.invito.on} setOn={v=>set("pv.invito.on",v)} />
+            <Row label="LedWall" priceNum={P.ledwall} priceLabel={`${P.ledwall}€`} on={pv.ledwall.on} setOn={v=>set("pv.ledwall.on",v)} />
+            <Row label="Un Dolce Cadeaux" priceNum={P.cadeaux} priceLabel={`${P.cadeaux}€`} on={pv.cadeaux.on} setOn={v=>set("pv.cadeaux.on",v)} qty={pv.cadeaux.q} setQty={v=>set("pv.cadeaux.q",v)} />
+            <Row label="Sweet Table base" subLabel="10 biscotti, 10 cupcake, 10 cake pops, 2kg confetti, 1kg marshmallow, cerchio piccolo" priceNum={P.sweetTable} priceLabel={`${P.sweetTable}€`} on={pv.sweetTable.on} setOn={v=>set("pv.sweetTable.on",v)} />
+            <Row label="Confettata" priceNum={P.confettata} priceLabel={`${P.confettata}€`} on={pv.confettata.on} setOn={v=>set("pv.confettata.on",v)} qty={pv.confettata.q} setQty={v=>set("pv.confettata.q",v)} />
+            <Row label="Full Table Kit" subLabel="Allestimento Tavolo completo comprensivo di: Tovaglia, Candelabri e Menù cartaceo" priceNum={3} priceLabel="3€/per." on={pv.fullTable.on} setOn={v=>set("pv.fullTable.on",v)} qty={pv.fullTable.q} setQty={v=>set("pv.fullTable.q",v)} />
+            <Row label="Semicerchio da terra" on={pv.semicerchio.on} setOn={v=>set("pv.semicerchio.on",v)} extra={pv.semicerchio.e} setExtra={v=>set("pv.semicerchio.e",v)} />
             <Row label="Altalena" on={pv.altalena.on} setOn={v=>set("pv.altalena.on",v)} extra={pv.altalena.e} setExtra={v=>set("pv.altalena.e",v)} />
-            <Row label="Cerchio grande con palloncini" on={pv.cerchioG.on} setOn={v=>set("pv.cerchioG.on",v)} extra={pv.cerchioG.e} setExtra={v=>set("pv.cerchioG.e",v)} />
-            <Row label="Cerchio piccolo con iniziali" on={pv.cerchioP.on} setOn={v=>set("pv.cerchioP.on",v)} extra={pv.cerchioP.e} setExtra={v=>set("pv.cerchioP.e",v)} />
-            <Row label="SIAE, DJ, Console e Luci" price={P.siaeDj} on={pv.siaeDj.on} setOn={v=>set("pv.siaeDj.on",v)} />
-            <Row label="SIAE" price={P.siae} on={pv.siae.on} setOn={v=>set("pv.siae.on",v)} />
-            <Row label="Speaker" price={P.speaker} on={pv.speaker.on} setOn={v=>set("pv.speaker.on",v)} />
-            <Row label="Fotografo" price={P.fotografo} on={pv.fotografo.on} setOn={v=>set("pv.fotografo.on",v)} />
+            <Row label={<><strong>Cerchio grande</strong> con palloncini</>} on={pv.cerchioG.on} setOn={v=>set("pv.cerchioG.on",v)} extra={pv.cerchioG.e} setExtra={v=>set("pv.cerchioG.e",v)} />
+            <Row label={<><strong>Cerchio piccolo</strong> con iniziali</>} on={pv.cerchioP.on} setOn={v=>set("pv.cerchioP.on",v)} extra={pv.cerchioP.e} setExtra={v=>set("pv.cerchioP.e",v)} />
+            <Row label="SIAE, DJ, Console e Luci" priceNum={P.siaeDj} priceLabel={`${P.siaeDj}€`} on={pv.siaeDj.on} setOn={v=>set("pv.siaeDj.on",v)} />
+            <Row label="SIAE" priceNum={P.siae} priceLabel={`${P.siae}€`} on={pv.siae.on} setOn={v=>set("pv.siae.on",v)} />
+            <Row label="Speaker" priceNum={P.speaker} priceLabel={`${P.speaker}€`} on={pv.speaker.on} setOn={v=>set("pv.speaker.on",v)} />
+            <Row label="Fotografo" priceNum={P.fotografo} priceLabel={`${P.fotografo}€`} on={pv.fotografo.on} setOn={v=>set("pv.fotografo.on",v)} />
             <Row label="Animazione" on={pv.animazione.on} setOn={v=>set("pv.animazione.on",v)} extra={pv.animazione.e} setExtra={v=>set("pv.animazione.e",v)} />
             <Row label="Strumento" on={pv.strumento.on} setOn={v=>set("pv.strumento.on",v)} extra={pv.strumento.e} setExtra={v=>set("pv.strumento.e",v)} />
-            <Row label="Instax (100pz)" price={P.instax} on={pv.instax.on} setOn={v=>set("pv.instax.on",v)} />
-            <Row label="Telo e Proiettore" price={P.telo} on={pv.telo.on} setOn={v=>set("pv.telo.on",v)} />
-            <Row label="Fuochi D'artificio (Previa Autorizz. VV.FF.)" price={P.fuochi} on={pv.fuochi.on} setOn={v=>set("pv.fuochi.on",v)} />
-            <Row label="Fontane pirotecniche" price={P.fontane} on={pv.fontane.on} setOn={v=>set("pv.fontane.on",v)} />
+            <Row label="Instax (100pz)" priceNum={P.instax} priceLabel={`${P.instax}€`} on={pv.instax.on} setOn={v=>set("pv.instax.on",v)} />
+            <Row label="Telo e Proiettore" priceNum={P.telo} priceLabel={`${P.telo}€`} on={pv.telo.on} setOn={v=>set("pv.telo.on",v)} />
+            <Row label="Fuochi D'artificio" subLabel="Previa Autorizz. Vigili del fuoco" priceNum={P.fuochi} priceLabel={`${P.fuochi}€`} on={pv.fuochi.on} setOn={v=>set("pv.fuochi.on",v)} />
+            <Row label="Fontane pirotecniche" priceNum={P.fontane} priceLabel={`${P.fontane}€`} on={pv.fontane.on} setOn={v=>set("pv.fontane.on",v)} />
           </Box>
         </div>
 
@@ -1007,7 +1071,7 @@ const PrintLayout = ({d}) => {
   const menuTot = ["smart","comfort","sharing","bimbi"].reduce((a,k)=>a+(Number(d.mp[k].pax)||0)*(Number(d.mp[k].ep)||0),0);
   const totPrev = menuTot + Number(d.mp.extra||0);
   const S = {
-    pg:{pageBreakAfter:"always",padding:"16px 20px",fontFamily:"'Gustavo',Georgia,serif",color:"#1A2F35",fontSize:10,maxWidth:"100%",boxSizing:"border-box"},
+    pg:{pageBreakAfter:"always",pageBreakInside:"avoid",padding:"16px 20px",fontFamily:"'Gustavo',Georgia,serif",color:"#1A2F35",fontSize:10,maxWidth:"100%",boxSizing:"border-box"},
     hdr:{color:T.teal,fontSize:12,fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6,marginTop:12,borderBottom:`2px solid ${T.teal}`,paddingBottom:2},
     row:{display:"flex",justifyContent:"space-between",borderBottom:"1px dotted #b8d8d9",padding:"2px 0"},
     label:{color:"#4a7a7c"},val:{fontWeight:"600",color:"#1A2F35"},
@@ -1549,11 +1613,13 @@ body{font-family:'Gustavo',Georgia,serif;color:#1a2f35;font-size:10px;background
 @media print{
   body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   .no-print{display:none!important;}
-  #pages > div{page-break-after:always;page-break-inside:avoid;}
-  #pages > div:last-child{page-break-after:auto;}
+  #pages > div{page-break-after:always !important;page-break-inside:avoid !important;break-after:page !important;}
+  #pages > div:last-child{page-break-after:auto !important;break-after:auto !important;}
+  * {-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;}
 }
 @media screen{
   body{max-width:210mm;margin:0 auto;padding:10mm;}
+  #pages > div{margin-bottom:20px;border:1px dashed #ddd;padding:10px;}
 }
 .toolbar{position:fixed;top:0;left:0;right:0;background:#036d6e;padding:10px 20px;
   display:flex;align-items:center;gap:12px;z-index:999;font-family:'Gustavo',Georgia,serif;}
