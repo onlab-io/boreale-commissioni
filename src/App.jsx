@@ -1481,7 +1481,7 @@ ${bodyHtml}
       if (!res.ok) throw new Error(await res.text());
       const rows = await res.json();
       // converte il formato DB → formato app
-      const items = rows.map(r => ({...r.payload, _id: r.id, savedAt: r.saved_at}));
+      const items = rows.map(r => deepMerge(deepMerge({}, INIT), {...r.payload, _id: r.id, savedAt: r.saved_at}));
       setHistory(items);
     } catch(e) {
       console.error("loadHistory:", e);
@@ -1554,7 +1554,8 @@ ${bodyHtml}
 
 
   const handleLoadRecord = (rec) => {
-    setData(rec);
+    // Deep merge con INIT per garantire tutti i campi anche su record vecchi
+    setData(deepMerge(deepMerge({}, INIT), rec));
     setShowHistory(false);
     setTab(0);
   };
