@@ -1270,6 +1270,58 @@ const PrintLayout = ({d, printAll=false}) => {
         </div>
       )}
 
+      {/* PAG MENU — una per tipo, solo se ha piatti selezionati */}
+      {[
+        {title:"SMART",menu:d.ms,sections:[["tapas","TAPAS"],["poke","POKÉ"],["spiedini","SPIEDINI"],["farciti","FARCITI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","VINI BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
+        {title:"COMFORT",menu:d.mc,sections:[["antipasti","ANTIPASTI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
+        {title:"SHARING",menu:d.msh,sections:[["portate","LE PORTATE"],["farciti","FARCITI"],["antipasti","ANTIPASTI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
+      ].map(({title,menu,sections})=>{
+        if (!menu) return null;
+        const hasDishes = sections.some(([k])=>Object.values(menu[k]||{}).some(v=>v.on));
+        if (!hasDishes && !printAll) return null;
+        return (
+          <div key={title} style={S.pg}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,paddingBottom:6,borderBottom:`2px solid ${T.teal}`}}>
+              <img src={LOGO_B64} alt="Boreale" style={{height:26,objectFit:"contain"}} />
+              <span style={{fontSize:13,fontWeight:"800",color:T.teal}}>menù {title}</span>
+              {menu.nPaxConf && <span style={{fontSize:10,color:T.sub}}>{menu.nPaxConf} pax confermati</span>}
+              <span style={{marginLeft:"auto",fontSize:9,color:T.sub}}>{d.occasione} · {d.data}</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+              {sections.map(([k,t])=>{
+                const items=Object.entries(menu[k]||{}).filter(([,v])=>v.on);
+                return items.length>0?(
+                  <div key={k}>
+                    <div style={{fontSize:9,fontWeight:"800",color:T.teal,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3,borderLeft:`2px solid ${T.teal}`,paddingLeft:5}}>{t}</div>
+                    {items.map(([dk,dv])=>(
+                      <div key={dk} style={{display:"flex",justifyContent:"space-between",borderBottom:"1px dotted #b8d8d9",padding:"1px 0",fontSize:10}}>
+                        <span>✓ {L[dk]??dk}</span>
+                        {dv.u && <span style={{color:T.teal,fontSize:9}}>{dv.u}ª</span>}
+                      </div>
+                    ))}
+                  </div>
+                ):null;
+              })}
+              {/* Allergeni/Diete se presenti */}
+              {(menu.allerg?.glutine||menu.allerg?.latte||Object.values(menu.diete||{}).some(Boolean)) && (
+                <div>
+                  <div style={{fontSize:9,fontWeight:"800",color:T.teal,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3,borderLeft:`2px solid ${T.teal}`,paddingLeft:5}}>ALLERGENI / DIETE</div>
+                  {menu.allerg?.glutine && <div style={{fontSize:9}}>Glutine: {menu.allerg.glutine} p.</div>}
+                  {menu.allerg?.latte && <div style={{fontSize:9}}>Latte: {menu.allerg.latte} p.</div>}
+                  {Object.entries(menu.diete||{}).filter(([,v])=>v).map(([k,v])=>(
+                    <div key={k} style={{fontSize:9}}>{k}: {v} p.</div>
+                  ))}
+                  {menu.acqua?.base && <div style={{fontSize:9}}>Water Station Base</div>}
+                  {menu.acqua?.extra && <div style={{fontSize:9}}>Water Station Extra</div>}
+                </div>
+              )}
+            </div>
+            {menu.note && <div style={{marginTop:8,padding:"6px 10px",background:T.xlight,borderRadius:5,fontSize:9,color:T.sub}}>Note: {menu.note}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
       {/* PAG 3 – PREVENTIVO (solo se ha valori) */}
       {showIf(totPrev > 0) && (
         <div style={S.pg}>
@@ -1345,58 +1397,6 @@ const PrintLayout = ({d, printAll=false}) => {
         </div>
       )}
 
-      {/* PAG MENU — una per tipo, solo se ha piatti selezionati */}
-      {[
-        {title:"SMART",menu:d.ms,sections:[["tapas","TAPAS"],["poke","POKÉ"],["spiedini","SPIEDINI"],["farciti","FARCITI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","VINI BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
-        {title:"COMFORT",menu:d.mc,sections:[["antipasti","ANTIPASTI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
-        {title:"SHARING",menu:d.msh,sections:[["portate","LE PORTATE"],["farciti","FARCITI"],["antipasti","ANTIPASTI"],["primi","PRIMI"],["secondi","SECONDI"],["dtrad","DESSERT TRAD."],["dmod","DESSERT MODERNI"],["frutta","FRUTTA"],["vB","BIANCHI"],["vR","ROSSI"],["vRos","ROSATI"],["boll","BOLLICINE"],["bollD","BOLL. DESSERT"]]},
-      ].map(({title,menu,sections})=>{
-        if (!menu) return null;
-        const hasDishes = sections.some(([k])=>Object.values(menu[k]||{}).some(v=>v.on));
-        if (!hasDishes && !printAll) return null;
-        return (
-          <div key={title} style={S.pg}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,paddingBottom:6,borderBottom:`2px solid ${T.teal}`}}>
-              <img src={LOGO_B64} alt="Boreale" style={{height:26,objectFit:"contain"}} />
-              <span style={{fontSize:13,fontWeight:"800",color:T.teal}}>menù {title}</span>
-              {menu.nPaxConf && <span style={{fontSize:10,color:T.sub}}>{menu.nPaxConf} pax confermati</span>}
-              <span style={{marginLeft:"auto",fontSize:9,color:T.sub}}>{d.occasione} · {d.data}</span>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-              {sections.map(([k,t])=>{
-                const items=Object.entries(menu[k]||{}).filter(([,v])=>v.on);
-                return items.length>0?(
-                  <div key={k}>
-                    <div style={{fontSize:9,fontWeight:"800",color:T.teal,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3,borderLeft:`2px solid ${T.teal}`,paddingLeft:5}}>{t}</div>
-                    {items.map(([dk,dv])=>(
-                      <div key={dk} style={{display:"flex",justifyContent:"space-between",borderBottom:"1px dotted #b8d8d9",padding:"1px 0",fontSize:10}}>
-                        <span>✓ {L[dk]??dk}</span>
-                        {dv.u && <span style={{color:T.teal,fontSize:9}}>{dv.u}ª</span>}
-                      </div>
-                    ))}
-                  </div>
-                ):null;
-              })}
-              {/* Allergeni/Diete se presenti */}
-              {(menu.allerg?.glutine||menu.allerg?.latte||Object.values(menu.diete||{}).some(Boolean)) && (
-                <div>
-                  <div style={{fontSize:9,fontWeight:"800",color:T.teal,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3,borderLeft:`2px solid ${T.teal}`,paddingLeft:5}}>ALLERGENI / DIETE</div>
-                  {menu.allerg?.glutine && <div style={{fontSize:9}}>Glutine: {menu.allerg.glutine} p.</div>}
-                  {menu.allerg?.latte && <div style={{fontSize:9}}>Latte: {menu.allerg.latte} p.</div>}
-                  {Object.entries(menu.diete||{}).filter(([,v])=>v).map(([k,v])=>(
-                    <div key={k} style={{fontSize:9}}>{k}: {v} p.</div>
-                  ))}
-                  {menu.acqua?.base && <div style={{fontSize:9}}>Water Station Base</div>}
-                  {menu.acqua?.extra && <div style={{fontSize:9}}>Water Station Extra</div>}
-                </div>
-              )}
-            </div>
-            {menu.note && <div style={{marginTop:8,padding:"6px 10px",background:T.xlight,borderRadius:5,fontSize:9,color:T.sub}}>Note: {menu.note}</div>}
-          </div>
-        );
-      })}
-    </div>
-  );
 };
 
 
