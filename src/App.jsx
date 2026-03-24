@@ -1074,7 +1074,7 @@ const TabSharing = ({d,set}) => (
 );
 
 // ─── PRINT LAYOUT ─────────────────────────────────────────────────────────────
-const PrintLayout = ({d}) => {
+const PrintLayout = ({d, printAll=false}) => {
   const menuTot = ["smart","comfort","sharing","bimbi"].reduce((a,k)=>a+(Number(d.mp[k].pax)||0)*(Number(d.mp[k].ep)||0),0);
   const totPrev = menuTot + Number(d.mp.extra||0);
   const S = {
@@ -1085,10 +1085,16 @@ const PrintLayout = ({d}) => {
     chkOn:{display:"inline-block",width:8,height:8,border:`1.5px solid ${T.teal}`,borderRadius:2,background:T.teal,marginRight:4,verticalAlign:"middle"}
   };
 
-  // Helper: mostra solo se c'è valore
-  const Val = ({label, value}) => value ? (
-    <div style={S.row}><span style={S.label}>{label}</span><span style={S.val}>{value}</span></div>
+  // Helper: mostra solo se c'è valore (o se printAll)
+  const Val = ({label, value, placeholder=""}) => (value || printAll) ? (
+    <div style={S.row}>
+      <span style={S.label}>{label}</span>
+      <span style={{...S.val, color: value ? "#1A2F35" : "#b8d8d9"}}>{value || placeholder || "—"}</span>
+    </div>
   ) : null;
+
+  // Mostra sezione solo se ha contenuto o printAll
+  const showIf = (condition) => printAll || condition;
 
   const Chk = ({on, children}) => on ? (
     <span style={{marginRight:10,lineHeight:1.8}}>
@@ -1136,12 +1142,12 @@ const PrintLayout = ({d}) => {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
           {/* Dati */}
           <div>
-            {(d.nomeFest||d.telFest) && <>
+            {showIf(d.nomeFest||d.telFest) && <>
               <div style={S.hdr}>Dati Festeggiato</div>
               {d.nomeFest && <div style={{fontWeight:"600"}}>{d.nomeFest}</div>}
               {d.telFest && <div style={{color:T.sub,fontSize:9}}>{d.telFest}</div>}
             </>}
-            {(d.nomeComm||d.telComm) && <>
+            {showIf(d.nomeComm||d.telComm) && <>
               <div style={{...S.hdr,marginTop:10}}>Dati Committente</div>
               {d.nomeComm && <div style={{fontWeight:"600"}}>{d.nomeComm}</div>}
               {d.telComm && <div style={{color:T.sub,fontSize:9}}>{d.telComm}</div>}
@@ -1171,7 +1177,7 @@ const PrintLayout = ({d}) => {
         </div>
 
         {/* Drink */}
-        {(d.dWaterBase?.on||d.dWaterExtra?.on||d.dDrinkCard?.on||d.dOpenBar?.on||d.dApBenv?.on||d.dList?.some(v=>v)||Object.values(d.dFf||{}).some(v=>v)) && <>
+        {showIf(d.dWaterBase?.on||d.dWaterExtra?.on||d.dDrinkCard?.on||d.dOpenBar?.on||d.dApBenv?.on||d.dList?.some(v=>v)||Object.values(d.dFf||{}).some(v=>v)) && <>
           <div style={S.hdr}>Drink e Aperitivo di Benvenuto</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             <Chk on={d.dWaterBase?.on}>Water Station Base{d.dWaterBase?.note?" — "+d.dWaterBase.note:""}</Chk>
@@ -1186,7 +1192,7 @@ const PrintLayout = ({d}) => {
         </>}
 
         {/* Torta */}
-        {(d.tTorta?.on||d.tBollicine?.on||d.tArt?.on||d.tMini?.on) && <>
+        {showIf(d.tTorta?.on||d.tBollicine?.on||d.tArt?.on||d.tMini?.on) && <>
           <div style={S.hdr}>Torta e Dessert</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {d.tTorta?.on && <div style={{width:"100%"}}>
@@ -1204,7 +1210,7 @@ const PrintLayout = ({d}) => {
         </>}
 
         {/* Allestimento */}
-        {Object.values(d.al||{}).some(v=>v.on) && <>
+        {showIf(Object.values(d.al||{}).some(v=>v.on)) && <>
           <div style={S.hdr}>Allestimento</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {Object.entries(d.al||{}).filter(([,v])=>v.on).map(([k,v])=>(
@@ -1224,7 +1230,7 @@ const PrintLayout = ({d}) => {
       </div>
 
       {/* PAG 2 – TEMA (solo se compilato) */}
-      {(d.tmSmart?.tema||d.tmSmart?.colori||d.tmComfort?.tema||d.tmComfort?.colori||d.msg1||d.msg2||d.invTemplate||d.noteGen) && (
+      {showIf(d.tmSmart?.tema||d.tmSmart?.colori||d.tmComfort?.tema||d.tmComfort?.colori||d.msg1||d.msg2||d.invTemplate||d.noteGen) && (
         <div style={S.pg}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,paddingBottom:6,borderBottom:`2px solid ${T.teal}`}}>
             <img src={LOGO_B64} alt="Boreale" style={{height:28,objectFit:"contain"}} />
@@ -1265,7 +1271,7 @@ const PrintLayout = ({d}) => {
       )}
 
       {/* PAG 3 – PREVENTIVO (solo se ha valori) */}
-      {totPrev > 0 && (
+      {showIf(totPrev > 0) && (
         <div style={S.pg}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,paddingBottom:6,borderBottom:`2px solid ${T.teal}`}}>
             <img src={LOGO_B64} alt="Boreale" style={{height:28,objectFit:"contain"}} />
@@ -1347,7 +1353,7 @@ const PrintLayout = ({d}) => {
       ].map(({title,menu,sections})=>{
         if (!menu) return null;
         const hasDishes = sections.some(([k])=>Object.values(menu[k]||{}).some(v=>v.on));
-        if (!hasDishes) return null;
+        if (!hasDishes && !printAll) return null;
         return (
           <div key={title} style={S.pg}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,paddingBottom:6,borderBottom:`2px solid ${T.teal}`}}>
@@ -1396,11 +1402,11 @@ const PrintLayout = ({d}) => {
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  {id:0,icon:"📋",label:"Commissione"},
+  {id:0,icon:"📋",label:"Copia Commissione"},
   {id:1,icon:"🎨",label:"Tema Evento"},
-  {id:2,icon:"🍽",label:"Menù Smart"},
-  {id:3,icon:"🥗",label:"Comfort + Bambini"},
-  {id:4,icon:"🤝",label:"Sharing + Bambini"},
+  {id:2,icon:"🍽",label:"Smart"},
+  {id:3,icon:"🥗",label:"Comfort"},
+  {id:4,icon:"🤝",label:"Sharing"},
   {id:5,icon:"💰",label:"Preventivo"},
 ];
 
@@ -1471,6 +1477,7 @@ ${bodyHtml}
 
 
   const [showHistory, setShowHistory] = useState(false);
+  const [printAll, setPrintAll] = useState(false);
   const [history, setHistory] = useState([]);
   const [downloadJson, setDownloadJson] = useState(null);
   const [downloadTitle, setDownloadTitle] = useState("");
@@ -1896,13 +1903,13 @@ Restituisci SOLO il JSON, nessun altro testo.`
     <div style={{position:"fixed",inset:0,background:T.xlight,zIndex:200,display:"flex",flexDirection:"column",fontFamily:"'Gustavo','DM Sans',sans-serif"}}>
       {/* Header storico */}
       <div style={{background:T.teal,padding:"14px 24px",display:"flex",alignItems:"center",gap:16,flexShrink:0}}>
-        <img src={LOGO_B64} alt="Boreale" style={{height:28,objectFit:"contain",filter:"brightness(0) invert(1)"}} />
-        <span style={{color:T.white,fontWeight:"700",fontSize:16,flex:1}}>Storico Commissioni</span>
         <button onClick={()=>setShowHistory(false)}
           style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.4)",
             color:T.white,borderRadius:7,padding:"6px 16px",cursor:"pointer",fontSize:13,fontWeight:"700",fontFamily:"inherit"}}>
           ← Torna al form
         </button>
+        <img src={LOGO_B64} alt="Boreale" style={{height:28,objectFit:"contain",filter:"brightness(0) invert(1)"}} />
+        <span style={{color:T.white,fontWeight:"700",fontSize:16,flex:1}}>Storico Commissioni</span>
       </div>
 
       {/* Lista */}
@@ -2006,12 +2013,21 @@ Restituisci SOLO il JSON, nessun altro testo.`
         </label>
         {scanMsg && <div style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:12,
           color:scanMsg.ok===true?"#2A9D6F":scanMsg.ok===false?"#C0392B":"#036d6e",fontWeight:"600",maxWidth:260}}>{scanMsg.text}</div>}
-        <button onClick={handlePrint}
-          title="Scarica un file HTML — aprilo nel browser e usa Stampa → Salva come PDF"
-          style={{margin:"7px 6px",padding:"6px 14px",background:T.mid,color:T.white,border:"none",
-            borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-          🖨 Esporta PDF
-        </button>
+        <div style={{display:"flex",alignItems:"center",gap:0,margin:"7px 6px"}}>
+          <button onClick={handlePrint}
+            style={{padding:"6px 12px",background:T.mid,color:T.white,border:"none",
+              borderRadius:"7px 0 0 7px",cursor:"pointer",fontSize:12,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+            🖨 Esporta PDF
+          </button>
+          <button
+            onClick={()=>setPrintAll(v=>!v)}
+            title={printAll ? "Stampa tutto — clicca per solo compilati" : "Solo campi compilati — clicca per stampare tutto"}
+            style={{padding:"6px 10px",background:printAll?T.teal:T.light,color:printAll?T.white:T.teal,
+              border:`1px solid ${T.border}`,borderLeft:"none",borderRadius:"0 7px 7px 0",
+              cursor:"pointer",fontSize:11,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+            {printAll ? "📄 Tutto" : "✏️ Compilati"}
+          </button>
+        </div>
         <button onClick={handleSave} disabled={saving}
           style={{margin:"7px 8px 7px 0",padding:"6px 14px",background:T.teal,color:T.white,border:"none",
             borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap",
@@ -2037,7 +2053,7 @@ Restituisci SOLO il JSON, nessun altro testo.`
           @page { size: A4 portrait; margin: 10mm 12mm; }
         }
       `}</style>
-      <PrintLayout d={data} />
+      <PrintLayout d={data} printAll={printAll} />
       {showHistory && <StoricoPagina />}
       {downloadJson && <JsonModal />}
     </div>
