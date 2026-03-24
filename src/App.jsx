@@ -1426,6 +1426,28 @@ function deepMerge(base, patch) {
   return result;
 }
 
+// ─── PRINT TOGGLE ────────────────────────────────────────────────────────────
+const PrintToggle = ({printAll, setPrintAll}) => (
+  <div style={{display:"flex",alignItems:"center",gap:7,padding:"4px 6px",
+    background:T.light,borderRadius:20,border:`1px solid ${T.border}`}}>
+    <span style={{fontSize:10.5,color:T.sub,fontWeight:"600",marginLeft:4}}>Stampa:</span>
+    <button onClick={()=>setPrintAll(false)}
+      style={{padding:"3px 10px",background:!printAll?T.teal:"transparent",
+        color:!printAll?T.white:T.sub,border:"none",borderRadius:14,
+        cursor:"pointer",fontSize:11,fontWeight:"700",fontFamily:"inherit",
+        transition:"all 0.15s"}}>
+      Compilati
+    </button>
+    <button onClick={()=>setPrintAll(true)}
+      style={{padding:"3px 10px",background:printAll?T.teal:"transparent",
+        color:printAll?T.white:T.sub,border:"none",borderRadius:14,
+        cursor:"pointer",fontSize:11,fontWeight:"700",fontFamily:"inherit",
+        transition:"all 0.15s",marginRight:2}}>
+      Tutto
+    </button>
+  </div>
+);
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState(0);
@@ -1910,6 +1932,9 @@ Restituisci SOLO il JSON, nessun altro testo.`
         </button>
         <img src={LOGO_B64} alt="Boreale" style={{height:28,objectFit:"contain",filter:"brightness(0) invert(1)"}} />
         <span style={{color:T.white,fontWeight:"700",fontSize:16,flex:1}}>Storico Commissioni</span>
+        <div style={{background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"2px",border:"1px solid rgba(255,255,255,0.3)"}}>
+          <PrintToggle printAll={printAll} setPrintAll={setPrintAll} />
+        </div>
       </div>
 
       {/* Lista */}
@@ -2013,19 +2038,12 @@ Restituisci SOLO il JSON, nessun altro testo.`
         </label>
         {scanMsg && <div style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:12,
           color:scanMsg.ok===true?"#2A9D6F":scanMsg.ok===false?"#C0392B":"#036d6e",fontWeight:"600",maxWidth:260}}>{scanMsg.text}</div>}
-        <div style={{display:"flex",alignItems:"center",gap:0,margin:"7px 6px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,margin:"7px 6px"}}>
+          <PrintToggle printAll={printAll} setPrintAll={setPrintAll} />
           <button onClick={handlePrint}
-            style={{padding:"6px 12px",background:T.mid,color:T.white,border:"none",
-              borderRadius:"7px 0 0 7px",cursor:"pointer",fontSize:12,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+            style={{padding:"6px 14px",background:T.mid,color:T.white,border:"none",
+              borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
             🖨 Esporta PDF
-          </button>
-          <button
-            onClick={()=>setPrintAll(v=>!v)}
-            title={printAll ? "Stampa tutto — clicca per solo compilati" : "Solo campi compilati — clicca per stampare tutto"}
-            style={{padding:"6px 10px",background:printAll?T.teal:T.light,color:printAll?T.white:T.teal,
-              border:`1px solid ${T.border}`,borderLeft:"none",borderRadius:"0 7px 7px 0",
-              cursor:"pointer",fontSize:11,fontWeight:"700",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-            {printAll ? "📄 Tutto" : "✏️ Compilati"}
           </button>
         </div>
         <button onClick={handleSave} disabled={saving}
